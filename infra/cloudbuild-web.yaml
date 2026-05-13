@@ -9,6 +9,12 @@ steps:
       - 'infra/Dockerfile.web'
       - '.'
 
+  # Push the image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/pipelinepilot/web:latest'
+
   # Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
