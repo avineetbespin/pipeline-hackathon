@@ -9,6 +9,8 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [pollInterval, setPollInterval] = useState(null)
+  const [showReasoning, setShowReasoning] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
 
   // Poll for status updates while execution is running
   useEffect(() => {
@@ -83,9 +85,24 @@ function App() {
   const handleReset = () => {
     setExecution(null)
     setError(null)
+    setShowReasoning(false)
     if (pollInterval) {
       clearInterval(pollInterval)
       setPollInterval(null)
+    }
+  }
+
+  const handleManualRefresh = async () => {
+    if (!execution) return
+
+    setRefreshing(true)
+    try {
+      const updated = await AgentAPI.getRunStatus(execution.execution_id)
+      setExecution(updated)
+    } catch (err) {
+      setError(`Refresh failed: ${err.message}`)
+    } finally {
+      setRefreshing(false)
     }
   }
 
@@ -104,12 +121,30 @@ function App() {
               </p>
             </div>
             {execution && (
-              <button
-                onClick={handleReset}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                New Pipeline
-              </button>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={showReasoning}
+                    onChange={(e) => setShowReasoning(e.target.checked)}
+                    className="rounded border-gray-300"
+                  />
+                  Show AI Reasoning
+                </label>
+                <button
+                  onClick={handleManualRefresh}
+                  disabled={refreshing}
+                  className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-300 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
+                >
+                  {refreshing ? 'Refreshing...' : '↻ Refresh'}
+                </button>
+                <button
+                  onClick={handleReset}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  New Pipeline
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -127,26 +162,94 @@ function App() {
           <div className="max-w-3xl mx-auto">
             <GoalInput onSubmit={handleSubmitGoal} loading={loading} />
 
-            {/* Example prompts */}
-            <div className="mt-8 p-6 bg-white rounded-lg border border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                Example Goals:
-              </h3>
-              <div className="space-y-2">
-                {[
-                  'Show me what Fivetran connectors I currently have set up',
-                  'List all tables in my BigQuery pipelinepilot dataset',
-                  'What destinations are configured in my Fivetran account?',
-                ].map((example, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleSubmitGoal(example)}
-                    disabled={loading}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 bg-gray-50 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
-                  >
-                    {example}
-                  </button>
-                ))}
+            {/* Example prompts - Categorized */}
+            <div className="mt-8 space-y-6">
+              {/* Simple Examples */}
+              <div className="p-6 bg-white rounded-lg border border-gray-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded">
+                    Simple
+                  </span>
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    Discovery & Status
+                  </h3>
+                </div>
+                <div className="space-y-2">
+                  {[
+                    'Show me what Fivetran connectors I currently have set up',
+                    'List all tables in my BigQuery pipelinepilot dataset',
+                    'What destinations are configured in my Fivetran account?',
+                    'Show me my Fivetran groups and workspaces',
+                  ].map((example, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleSubmitGoal(example)}
+                      disabled={loading}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 bg-gray-50 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
+                    >
+                      {example}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Intermediate Examples */}
+              <div className="p-6 bg-white rounded-lg border border-gray-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded">
+                    Intermediate
+                  </span>
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    Queries & Analysis
+                  </h3>
+                </div>
+                <div className="space-y-2">
+                  {[
+                    'Show me all connectors in my first Fivetran group',
+                    'What is the total revenue from Stripe in the last 30 days?',
+                    'Show me the schema of the connectors table',
+                    'Query sync_logs and show me the most recent 10 syncs',
+                    'Which connector synced the most rows recently?',
+                  ].map((example, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleSubmitGoal(example)}
+                      disabled={loading}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 bg-gray-50 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
+                    >
+                      {example}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Advanced Examples */}
+              <div className="p-6 bg-white rounded-lg border border-gray-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="px-2 py-1 text-xs font-semibold text-purple-700 bg-purple-100 rounded">
+                    Advanced
+                  </span>
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    Pipelines & Automation
+                  </h3>
+                </div>
+                <div className="space-y-2">
+                  {[
+                    'Create a BigQuery view that calculates monthly revenue trends',
+                    'Set up a daily alert to Slack if CAC payback exceeds 6 months',
+                    'Show me all scheduled jobs and their status',
+                    'Create a view combining Stripe revenue with HubSpot conversion data',
+                  ].map((example, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleSubmitGoal(example)}
+                      disabled={loading}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 bg-gray-50 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
+                    >
+                      {example}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -158,6 +261,7 @@ function App() {
                 plan={execution.plan}
                 onApprove={handleApprove}
                 onReject={handleReject}
+                showReasoning={showReasoning}
               />
             </div>
 

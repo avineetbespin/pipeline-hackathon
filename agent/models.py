@@ -23,7 +23,9 @@ class ToolType(str, Enum):
     FIVETRAN_WRITE = "fivetran_write"
     BIGQUERY_READ = "bigquery_read"
     BIGQUERY_WRITE = "bigquery_write"
-    SCHEDULER = "scheduler"
+    SCHEDULER_READ = "scheduler_read"
+    SCHEDULER_WRITE = "scheduler_write"
+    ALERTS_WRITE = "alerts_write"
 
 
 class Step(BaseModel):

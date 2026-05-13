@@ -1,4 +1,8 @@
+import { useState, useEffect } from 'react'
+
 export default function ExecutionStatus({ execution }) {
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+
   if (!execution) return null
 
   const { status, plan, started_at, completed_at } = execution
@@ -11,6 +15,18 @@ export default function ExecutionStatus({ execution }) {
   const waitingApprovalSteps = plan?.steps?.filter(s => s.status === 'waiting_approval').length || 0
 
   const progressPercentage = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0
+
+  // Track elapsed time for running executions
+  useEffect(() => {
+    if (status === 'running' && started_at) {
+      const interval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - new Date(started_at).getTime()) / 1000)
+        setElapsedSeconds(elapsed)
+      }, 1000)
+
+      return () => clearInterval(interval)
+    }
+  }, [status, started_at])
 
   // Status color
   const statusColors = {
@@ -88,6 +104,14 @@ export default function ExecutionStatus({ execution }) {
             </span>
           </div>
         )}
+        {status === 'running' && started_at && (
+          <div className="flex justify-between">
+            <span className="text-gray-600">Elapsed:</span>
+            <span className="font-medium text-blue-600">
+              {elapsedSeconds}s
+            </span>
+          </div>
+        )}
         {completed_at && (
           <div className="flex justify-between">
             <span className="text-gray-600">Completed:</span>
@@ -105,6 +129,15 @@ export default function ExecutionStatus({ execution }) {
           </div>
         )}
       </div>
+
+      {/* Long-running notice */}
+      {status === 'running' && elapsedSeconds > 60 && (
+        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+          <p className="text-xs text-yellow-800">
+            <strong>Still working...</strong> Some operations (like Fivetran API calls) can take 2-5 minutes on first request.
+          </p>
+        </div>
+      )}
 
       {/* Execution ID */}
       <div className="mt-4 p-3 bg-gray-50 rounded text-xs">

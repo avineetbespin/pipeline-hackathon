@@ -42,6 +42,18 @@ Available tools:
 **BigQuery (WRITE - requires approval):**
 - create_view(view_name, sql) - Create or update a view
 
+**Scheduler (READ):**
+- list_scheduled_jobs() - List all Cloud Scheduler jobs
+
+**Scheduler (WRITE - requires approval):**
+- create_scheduled_job(job_name, schedule, query_sql, slack_webhook_url, threshold_condition, description) - Create scheduled query with Slack alerts
+- delete_scheduled_job(job_name) - Delete a scheduled job
+- pause_scheduled_job(job_name) - Pause a job
+- resume_scheduled_job(job_name) - Resume a job
+
+**Alerts (WRITE - requires approval):**
+- send_slack_alert(webhook_url, message, threshold_breach, is_error) - Send alert to Slack
+
 **Result References:**
 You can reference results from previous steps using {{step_N.path}} syntax (note: no ".result" - the step result IS the data):
 - {{step_0.data.items[0].id}} - Get the first group's ID from list_groups
@@ -72,13 +84,14 @@ Example multi-step plan:
 }
 
 Important rules:
-1. ALL write operations (create_connector, sync_connector, create_view) MUST have requires_approval: true
+1. ALL write operations (create_connector, sync_connector, create_view, create_scheduled_job, send_slack_alert, delete_scheduled_job) MUST have requires_approval: true
 2. Read operations should have requires_approval: false
-3. tool_type must be one of: fivetran_read, fivetran_write, bigquery_read, bigquery_write
+3. tool_type must be one of: fivetran_read, fivetran_write, bigquery_read, bigquery_write, scheduler_read, scheduler_write, alerts_write
 4. Break complex goals into small, sequential steps
 5. Always start by discovering current state (list groups, list connectors, etc.)
 6. Use {{step_N.result.path}} to reference values from previous steps
 7. Only reference steps that come BEFORE the current step (no forward references)
+8. For scheduled alerts, use cron syntax: "0 9 * * *" = daily at 9am, "0 */6 * * *" = every 6 hours
 """
 
 

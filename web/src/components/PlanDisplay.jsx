@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import ApprovalGate from './ApprovalGate'
 
 const STATUS_STYLES = {
@@ -16,8 +17,17 @@ const STATUS_ICONS = {
   waiting_approval: '⏸',
 }
 
-export default function PlanDisplay({ plan, onApprove, onReject }) {
+export default function PlanDisplay({ plan, onApprove, onReject, showReasoning }) {
+  const [expandedSteps, setExpandedSteps] = useState({})
+
   if (!plan) return null
+
+  const toggleExpanded = (stepId) => {
+    setExpandedSteps(prev => ({
+      ...prev,
+      [stepId]: !prev[stepId]
+    }))
+  }
 
   return (
     <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
@@ -56,6 +66,16 @@ export default function PlanDisplay({ plan, onApprove, onReject }) {
                       </p>
                     )}
                   </div>
+
+                  {/* Show reasoning if enabled */}
+                  {showReasoning && step.description && (
+                    <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
+                      <p className="font-medium text-blue-900">Why this step:</p>
+                      <p className="text-blue-700 mt-1">
+                        {step.description} - This helps the agent {step.tool_type === 'fivetran_read' || step.tool_type === 'bigquery_read' ? 'discover the current state' : 'make the requested changes'} using the {step.tool_name} tool.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
               {step.requires_approval && (
@@ -77,10 +97,22 @@ export default function PlanDisplay({ plan, onApprove, onReject }) {
             {/* Show result if completed */}
             {step.status === 'completed' && step.result && (
               <div className="mt-3 p-3 bg-white bg-opacity-50 rounded text-xs">
-                <p className="font-medium text-gray-700 mb-1">Result:</p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="font-medium text-gray-700">Result:</p>
+                  {JSON.stringify(step.result).length > 300 && (
+                    <button
+                      onClick={() => toggleExpanded(step.step_id)}
+                      className="text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      {expandedSteps[step.step_id] ? 'Show Less' : 'Show More'}
+                    </button>
+                  )}
+                </div>
                 <pre className="text-gray-600 overflow-x-auto">
-                  {JSON.stringify(step.result, null, 2).slice(0, 300)}
-                  {JSON.stringify(step.result).length > 300 && '...'}
+                  {expandedSteps[step.step_id]
+                    ? JSON.stringify(step.result, null, 2)
+                    : JSON.stringify(step.result, null, 2).slice(0, 300) + (JSON.stringify(step.result).length > 300 ? '...' : '')
+                  }
                 </pre>
               </div>
             )}

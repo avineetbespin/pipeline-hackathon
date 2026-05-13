@@ -41,7 +41,10 @@
       "Bash(python scripts/create_sample_data.py)",
       "Bash(git commit -m 'feat: Add sample BigQuery data and capabilities documentation *)",
       "Bash(git commit -m 'docs: Add comprehensive testing guide *)",
-      "Bash(git commit -m 'docs: Add next session handoff and memory files *)"
+      "Bash(git commit -m 'docs: Add next session handoff and memory files *)",
+      "Bash(git commit -m 'docs: Add session end summary *)",
+      "Bash(grep -E \"\\\\.md$\")",
+      "Bash(git rm *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\avine\\.claude\\projects\\c--Users-avine-pipeline-hackathon-pipeline-hackathon\\memory"
