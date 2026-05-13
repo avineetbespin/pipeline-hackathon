@@ -3,9 +3,10 @@ Plan executor - walks through plan steps and calls tools.
 """
 
 import asyncio
+import re
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from agent.models import Plan, Step, StepStatus, ApprovalRequest, PlanExecution
 from agent.state_memory import InMemoryStateManager
@@ -23,6 +24,8 @@ class PlanExecutor:
             **fivetran.TOOL_FUNCTIONS,
             **bigquery.TOOL_FUNCTIONS
         }
+        # Track results from completed steps for reference
+        self.step_results: Dict[int, Any] = {}
 
     async def execute_plan(self, plan: Plan) -> PlanExecution:
         """
@@ -53,6 +56,10 @@ class PlanExecutor:
             execution.current_step_index = idx
             print(f"[Executor] Step {idx+1}/{len(plan.steps)}: {step.description}")
 
+            # Resolve references to previous step results
+            resolved_arguments = self._resolve_step_references(step.arguments, idx)
+            step.arguments = resolved_arguments
+
             # Check if approval is required
             if step.requires_approval:
                 print(f"[Executor] Step requires approval - creating approval request")
@@ -77,6 +84,9 @@ class PlanExecutor:
                 step.result = result
                 step.status = StepStatus.COMPLETED
                 step.completed_at = datetime.utcnow()
+
+                # Store result for future reference
+                self.step_results[idx] = result
 
                 print(f"[Executor] Step completed successfully")
                 if result:
@@ -104,6 +114,108 @@ class PlanExecutor:
 
         print(f"\n[Executor] Execution {execution.status}")
         return execution
+
+    def _resolve_step_references(self, arguments: Dict[str, Any], current_step_idx: int) -> Dict[str, Any]:
+        """
+        Resolve references to previous step results in arguments.
+
+        Supports syntax like:
+        - {{step_0.result.data.items[0].id}} - Extract nested value
+        - {{step_1.result.group_id}} - Simple field access
+
+        Args:
+            arguments: Raw arguments dict that may contain {{...}} references
+            current_step_idx: Index of current step (for validation)
+
+        Returns:
+            Resolved arguments with actual values
+        """
+        if not arguments:
+            return arguments
+
+        resolved = {}
+
+        for key, value in arguments.items():
+            if isinstance(value, str) and "{{" in value and "}}" in value:
+                # Extract all {{...}} patterns
+                pattern = r'\{\{([^}]+)\}\}'
+                matches = re.findall(pattern, value)
+
+                resolved_value = value
+                for match in matches:
+                    # Parse reference like "step_0.data.items[0].id"
+                    actual_value = self._extract_from_reference(match, current_step_idx)
+                    if actual_value is not None:
+                        # Replace the {{...}} with the actual value
+                        resolved_value = resolved_value.replace(f"{{{{{match}}}}}", str(actual_value))
+                        print(f"[Executor] Resolved reference {key}: {match} => {actual_value}")
+                    else:
+                        print(f"[Executor] WARNING: Could not resolve reference in {key}: {match}")
+
+                resolved[key] = resolved_value
+            else:
+                resolved[key] = value
+
+        return resolved
+
+    def _extract_from_reference(self, reference: str, current_step_idx: int) -> Any:
+        """
+        Extract value from a step reference path.
+
+        Args:
+            reference: Path like "step_0.data.items[0].id"
+            current_step_idx: Current step index (for validation)
+
+        Returns:
+            Extracted value or None if not found
+        """
+        parts = reference.strip().split(".")
+
+        # First part should be step_N
+        if not parts[0].startswith("step_"):
+            return None
+
+        try:
+            step_idx = int(parts[0].split("_")[1])
+        except (IndexError, ValueError):
+            return None
+
+        # Validate step index
+        if step_idx >= current_step_idx:
+            return None
+
+        if step_idx not in self.step_results:
+            return None
+
+        # Navigate the path
+        current = self.step_results[step_idx]
+
+        for part in parts[1:]:  # Skip step_N, start from first field
+            if "[" in part:
+                # Handle array indexing like "items[0]"
+                field, index_str = part.split("[")
+                index = int(index_str.rstrip("]"))
+
+                if isinstance(current, dict) and field in current:
+                    current = current[field]
+                elif field == "":
+                    # Just indexing current, like [0]
+                    pass
+                else:
+                    return None
+
+                if isinstance(current, list) and 0 <= index < len(current):
+                    current = current[index]
+                else:
+                    return None
+            else:
+                # Regular field access
+                if isinstance(current, dict) and part in current:
+                    current = current[part]
+                else:
+                    return None
+
+        return current
 
     async def _execute_step(self, step: Step) -> dict:
         """Execute a single step by calling the appropriate tool."""

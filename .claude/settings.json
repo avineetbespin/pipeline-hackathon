@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gcloud config *)",
+      "Bash(gcloud --version)",
+      "Bash(where python *)",
+      "Bash(ls \"/c/Program Files \\(x86\\)/Google/Cloud SDK/google-cloud-sdk/\" | head -20)",
+      "Read(//c/Program Files \\(x86\\)/Google/Cloud SDK/google-cloud-sdk//**)",
+      "Bash(export PATH=\"/c/Python313:$PATH\")",
+      "Bash(\"/c/Program Files \\(x86\\)/Google/Cloud SDK/google-cloud-sdk/bin/gcloud\" config get-value project)",
+      "Bash(export CLOUDSDK_PYTHON=\"/c/Python313/python.exe\")",
+      "Bash(gcloud auth *)",
+      "Bash(bash scripts/01_setup.sh)",
+      "Bash(gcloud iam *)",
+      "Bash(bq ls *)",
+      "Bash(gcloud services *)",
+      "Bash(gcloud secrets *)",
+      "Bash(python -m venv .venv)",
+      "Bash(export CLOUDSDK_PYTHON=\"C:/Python313/python.exe\")",
+      "Bash(git clone *)",
+      "Bash(ls -la /tmp/fivetran-mcp-temp/)",
+      "Read(//tmp/**)",
+      "Bash(gcloud artifacts *)",
+      "Bash(gcloud builds *)",
+      "Bash(gcloud run *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git commit -m 'Add session summary for Phase 1-3 completion *)",
+      "Bash(git commit -m 'Add Phase 4 quick start guide *)",
+      "Bash(python test_result_passing.py)"
+    ]
+  }
+}

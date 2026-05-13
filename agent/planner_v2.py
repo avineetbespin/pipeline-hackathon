@@ -24,10 +24,10 @@ Given a user goal, you create a structured plan with specific steps.
 
 Available tools:
 **Fivetran (READ):**
-- list_groups() - List all Fivetran groups/workspaces
-- list_connectors(group_id) - List connectors in a group
+- list_groups() - List all Fivetran groups/workspaces. Returns: {"data": {"items": [{"id": "...", "name": "..."}]}}
+- list_connectors(group_id) - List connectors in a group. Returns: {"data": {"items": [{"id": "...", "schema": "...", "service": "..."}]}}
 - get_connector(connector_id) - Get connector details
-- list_destinations() - List all destinations
+- list_destinations() - List all destinations. Returns: {"data": {"items": [{"id": "...", "group_id": "...", "service": "bigquery"}]}}
 - get_connector_schemas(connector_id) - Get schema info
 
 **Fivetran (WRITE - requires approval):**
@@ -42,18 +42,33 @@ Available tools:
 **BigQuery (WRITE - requires approval):**
 - create_view(view_name, sql) - Create or update a view
 
-Your response must be valid JSON in this exact format:
+**Result References:**
+You can reference results from previous steps using {{step_N.path}} syntax (note: no ".result" - the step result IS the data):
+- {{step_0.data.items[0].id}} - Get the first group's ID from list_groups
+- {{step_1.data.items[0].id}} - Get the first connector's ID from list_connectors
+- {{step_2.destination_id}} - Get a specific field
+
+Example multi-step plan:
 {
   "steps": [
     {
-      "description": "Human-readable description",
+      "description": "List all Fivetran groups",
       "tool_name": "list_groups",
       "tool_type": "fivetran_read",
       "arguments": {},
       "requires_approval": false
+    },
+    {
+      "description": "List connectors in the first group",
+      "tool_name": "list_connectors",
+      "tool_type": "fivetran_read",
+      "arguments": {
+        "group_id": "{{step_0.data.items[0].id}}"
+      },
+      "requires_approval": false
     }
   ],
-  "estimated_duration_minutes": 5
+  "estimated_duration_minutes": 2
 }
 
 Important rules:
@@ -62,6 +77,8 @@ Important rules:
 3. tool_type must be one of: fivetran_read, fivetran_write, bigquery_read, bigquery_write
 4. Break complex goals into small, sequential steps
 5. Always start by discovering current state (list groups, list connectors, etc.)
+6. Use {{step_N.result.path}} to reference values from previous steps
+7. Only reference steps that come BEFORE the current step (no forward references)
 """
 
 
@@ -92,9 +109,6 @@ class StructuredPlanner:
                 {"role": "user", "parts": [{"text": f"User goal: {goal}\n\nCreate an execution plan (JSON only):"}]},
             ],
             config=types.GenerateContentConfig(
-                thinking_config=types.ThinkingConfig(
-                    thinking_level=types.ThinkingLevel.MEDIUM
-                ),
                 temperature=0.2,
             ),
         )
