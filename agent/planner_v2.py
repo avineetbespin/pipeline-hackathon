@@ -55,10 +55,12 @@ Available tools:
 - send_slack_alert(webhook_url, message, threshold_breach, is_error) - Send alert to Slack
 
 **Result References:**
-You can reference results from previous steps using {{step_N.path}} syntax (note: no ".result" - the step result IS the data):
+You MUST reference results from previous steps using {{step_N.path}} syntax with double curly braces:
 - {{step_0.data.items[0].id}} - Get the first group's ID from list_groups
 - {{step_1.data.items[0].id}} - Get the first connector's ID from list_connectors
 - {{step_2.destination_id}} - Get a specific field
+
+IMPORTANT: Always use {{step_N.path}} with DOUBLE curly braces. Never use angle brackets like <GROUP_ID_FROM_STEP_1>.
 
 Example multi-step plan:
 {

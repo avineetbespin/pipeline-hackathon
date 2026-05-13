@@ -121,11 +121,11 @@ class PlanExecutor:
         Resolve references to previous step results in arguments.
 
         Supports syntax like:
-        - {{step_0.result.data.items[0].id}} - Extract nested value
-        - {{step_1.result.group_id}} - Simple field access
+        - {{step_0.data.items[0].id}} - Extract nested value (preferred)
+        - <GROUP_ID_FROM_STEP_N> - Legacy angle bracket syntax (auto-converted)
 
         Args:
-            arguments: Raw arguments dict that may contain {{...}} references
+            arguments: Raw arguments dict that may contain {{...}} or <...> references
             current_step_idx: Index of current step (for validation)
 
         Returns:
@@ -137,21 +137,56 @@ class PlanExecutor:
         resolved = {}
 
         for key, value in arguments.items():
-            if isinstance(value, str) and "{{" in value and "}}" in value:
-                # Extract all {{...}} patterns
-                pattern = r'\{\{([^}]+)\}\}'
-                matches = re.findall(pattern, value)
-
+            if isinstance(value, str):
                 resolved_value = value
-                for match in matches:
-                    # Parse reference like "step_0.data.items[0].id"
-                    actual_value = self._extract_from_reference(match, current_step_idx)
-                    if actual_value is not None:
-                        # Replace the {{...}} with the actual value
-                        resolved_value = resolved_value.replace(f"{{{{{match}}}}}", str(actual_value))
-                        print(f"[Executor] Resolved reference {key}: {match} => {actual_value}")
-                    else:
-                        print(f"[Executor] WARNING: Could not resolve reference in {key}: {match}")
+
+                # Handle {{step_N.path}} syntax (preferred)
+                if "{{" in value and "}}" in value:
+                    pattern = r'\{\{([^}]+)\}\}'
+                    matches = re.findall(pattern, value)
+
+                    for match in matches:
+                        actual_value = self._extract_from_reference(match, current_step_idx)
+                        if actual_value is not None:
+                            resolved_value = resolved_value.replace(f"{{{{{match}}}}}", str(actual_value))
+                            print(f"[Executor] Resolved reference {key}: {match} => {actual_value}")
+                        else:
+                            print(f"[Executor] WARNING: Could not resolve reference in {key}: {match}")
+
+                # Handle <DESCRIPTION_FROM_STEP_N> syntax (fallback - try to auto-resolve)
+                elif "<" in value and ">" in value and "STEP" in value.upper():
+                    # Extract step number from patterns like <GROUP_ID_FROM_STEP_1>
+                    step_pattern = r'<[^>]*STEP[_\s]*(\d+)[^>]*>'
+                    step_match = re.search(step_pattern, value, re.IGNORECASE)
+
+                    if step_match:
+                        step_num = int(step_match.group(1))
+                        print(f"[Executor] Found legacy angle bracket reference to step {step_num}")
+
+                        # Try to extract the first ID-like field from that step
+                        if step_num < current_step_idx and step_num in self.step_results:
+                            result = self.step_results[step_num]
+
+                            # Try common paths for IDs
+                            actual_value = None
+                            if isinstance(result, dict):
+                                # Try data.items[0].id (common Fivetran pattern)
+                                if "data" in result and isinstance(result["data"], dict):
+                                    items = result["data"].get("items", [])
+                                    if items and len(items) > 0 and isinstance(items[0], dict):
+                                        actual_value = items[0].get("id")
+
+                                # Fallback: try top-level id
+                                if not actual_value:
+                                    actual_value = result.get("id")
+
+                            if actual_value:
+                                resolved_value = str(actual_value)
+                                print(f"[Executor] Auto-resolved angle bracket reference {key}: {value} => {actual_value}")
+                            else:
+                                print(f"[Executor] WARNING: Could not auto-resolve angle bracket reference in {key}: {value}")
+                        else:
+                            print(f"[Executor] WARNING: Invalid step reference in {key}: {value}")
 
                 resolved[key] = resolved_value
             else:
