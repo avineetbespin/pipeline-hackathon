@@ -1,0 +1,17 @@
+steps:
+  # Build the agent backend container
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/pipelinepilot/agent-backend:latest'
+      - '-f'
+      - 'infra/Dockerfile.agent'
+      - '.'
+
+images:
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/pipelinepilot/agent-backend:latest'
+
+options:
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY

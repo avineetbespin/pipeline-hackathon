@@ -1,0 +1,27 @@
+# Dockerfile for Fivetran MCP HTTP wrapper
+# Deploys to Cloud Run to provide HTTP API for Fivetran operations
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copy MCP server files
+COPY mcp/ /app/mcp/
+COPY requirements.txt /app/
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir \
+    fastapi==0.115.0 \
+    uvicorn[standard]==0.32.0 \
+    httpx==0.28.1 \
+    pydantic==2.9.0
+
+# Expose port
+EXPOSE 8080
+
+# Cloud Run sets PORT env var
+ENV PORT=8080
+
+# Run the HTTP wrapper
+CMD ["python", "mcp/http_wrapper.py"]

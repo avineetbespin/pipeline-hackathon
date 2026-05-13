@@ -1,0 +1,23 @@
+# Dockerfile for PipelinePilot Agent Backend
+# Deploys the Gemini-powered agent to Cloud Run
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copy requirements and install dependencies
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy agent code
+COPY agent/ /app/agent/
+
+# Expose port
+EXPOSE 8080
+
+# Cloud Run sets PORT env var
+ENV PORT=8080
+ENV PYTHONPATH=/app
+
+# Run the FastAPI agent
+CMD ["python", "-m", "uvicorn", "agent.main:app", "--host", "0.0.0.0", "--port", "8080"]
