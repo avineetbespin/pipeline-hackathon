@@ -68,3 +68,23 @@ yarn-error.log*
 *.mp4
 *.mov
 demo_recordings/
+
+# Internal documentation (not for hackathon submission)
+BUGS_FIXED.md
+CURRENT_CAPABILITIES.md
+DEPLOYMENT_COMPLETE.md
+DEPLOYMENT_STATUS.md
+DEPLOYMENT_URLS.md
+NEXT_SESSION.md
+PHASE3_COMPLETE.md
+PHASE4_PROGRESS.md
+PHASE4_READY.md
+SESSION_END_SUMMARY.md
+SESSION_SUMMARY.md
+SESSION_SUMMARY_PHASE4.md
+TESTING_PLAN.md
+TEST_NOW.md
+QUICK_REFERENCE.md
+
+# Claude Code internal files
+.claude/
