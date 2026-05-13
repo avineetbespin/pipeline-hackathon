@@ -28,7 +28,12 @@
       "Bash(git push *)",
       "Bash(git commit -m 'Add session summary for Phase 1-3 completion *)",
       "Bash(git commit -m 'Add Phase 4 quick start guide *)",
-      "Bash(python test_result_passing.py)"
+      "Bash(python test_result_passing.py)",
+      "Bash(tee /tmp/agent-deploy.log)",
+      "Bash(git commit -m 'fix: Update deployment configs for Cloud Build compatibility *)",
+      "Bash(git commit -m 'fix: Use npm install instead of npm ci \\(no package-lock.json\\) *)",
+      "Bash(git commit -m 'fix: Add explicit docker push step before Cloud Run deploy *)",
+      "Bash(git commit -m 'docs: Add comprehensive Phase 4 documentation and deployment complete *)"
     ]
   }
 }
