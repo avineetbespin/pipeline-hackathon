@@ -33,7 +33,11 @@
       "Bash(git commit -m 'fix: Update deployment configs for Cloud Build compatibility *)",
       "Bash(git commit -m 'fix: Use npm install instead of npm ci \\(no package-lock.json\\) *)",
       "Bash(git commit -m 'fix: Add explicit docker push step before Cloud Run deploy *)",
-      "Bash(git commit -m 'docs: Add comprehensive Phase 4 documentation and deployment complete *)"
+      "Bash(git commit -m 'docs: Add comprehensive Phase 4 documentation and deployment complete *)",
+      "Bash(gcloud alpha *)",
+      "Bash(python scripts/create_bigquery_dataset.py)",
+      "Bash(gcloud projects *)",
+      "Bash(git commit -m 'fix: Add BigQuery permissions to service account *)"
     ]
   }
 }
