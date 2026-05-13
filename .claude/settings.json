@@ -39,7 +39,8 @@
       "Bash(gcloud projects *)",
       "Bash(git commit -m 'fix: Add BigQuery permissions to service account *)",
       "Bash(python scripts/create_sample_data.py)",
-      "Bash(git commit -m 'feat: Add sample BigQuery data and capabilities documentation *)"
+      "Bash(git commit -m 'feat: Add sample BigQuery data and capabilities documentation *)",
+      "Bash(git commit -m 'docs: Add comprehensive testing guide *)"
     ]
   }
 }
