@@ -12,6 +12,10 @@ RUN npm ci
 # Copy source code
 COPY web/ ./
 
+# Set API URL for build
+ARG VITE_API_URL=https://pipelinepilot-agent-956500419273.us-central1.run.app
+ENV VITE_API_URL=$VITE_API_URL
+
 # Build the app
 RUN npm run build
 

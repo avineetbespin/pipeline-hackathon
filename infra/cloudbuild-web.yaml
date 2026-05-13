@@ -4,19 +4,10 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'us-central1-docker.pkg.dev/${PROJECT_ID}/pipelinepilot/web:${SHORT_SHA}'
-      - '-t'
-      - 'us-central1-docker.pkg.dev/${PROJECT_ID}/pipelinepilot/web:latest'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/pipelinepilot/web:latest'
       - '-f'
       - 'infra/Dockerfile.web'
       - '.'
-
-  # Push the container image to Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'push'
-      - '--all-tags'
-      - 'us-central1-docker.pkg.dev/${PROJECT_ID}/pipelinepilot/web'
 
   # Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -26,17 +17,18 @@ steps:
       - 'deploy'
       - 'pipelinepilot-web'
       - '--image'
-      - 'us-central1-docker.pkg.dev/${PROJECT_ID}/pipelinepilot/web:${SHORT_SHA}'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/pipelinepilot/web:latest'
       - '--region'
       - 'us-central1'
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
-      - '--set-env-vars'
-      - 'API_URL=https://pipelinepilot-agent-956500419273.us-central1.run.app'
       - '--port'
       - '8080'
 
 images:
-  - 'us-central1-docker.pkg.dev/${PROJECT_ID}/pipelinepilot/web:${SHORT_SHA}'
-  - 'us-central1-docker.pkg.dev/${PROJECT_ID}/pipelinepilot/web:latest'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/pipelinepilot/web:latest'
+
+options:
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
