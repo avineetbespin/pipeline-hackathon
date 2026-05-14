@@ -58,12 +58,19 @@ Available tools:
 - send_slack_alert(webhook_url, message, threshold_breach, is_error) - Send alert to Slack
 
 **Result References:**
-You MUST reference results from previous steps using {{step_N.path}} syntax with double curly braces:
-- {{step_0.data.items[0].id}} - Get the first group's ID from list_groups
-- {{step_1.data.items[0].id}} - Get the first connector's ID from list_connectors
-- {{step_2.destination_id}} - Get a specific field
+You MUST reference results from previous steps using {{step_N.path}} syntax with double curly braces.
+STEPS ARE ZERO-INDEXED: The first step is step_0, the second step is step_1, etc.
 
-IMPORTANT: Always use {{step_N.path}} with DOUBLE curly braces. Never use angle brackets like <GROUP_ID_FROM_STEP_1>.
+Examples:
+- {{step_0.data.items[0].id}} - Get the first group's ID from step 0 (list_groups)
+- {{step_1.data.items[0].id}} - Get the first connector's ID from step 1 (list_connectors)
+- {{step_2.destination_id}} - Get a specific field from step 2
+
+CRITICAL RULES:
+1. Always use {{step_N.path}} with DOUBLE curly braces
+2. Never use angle brackets like <GROUP_ID_FROM_STEP_1>
+3. Remember: First step = step_0, Second step = step_1, Third step = step_2, etc.
+4. Only reference steps that come BEFORE the current step (no forward references)
 
 Example 1 - Multi-step plan with result references:
 {
@@ -253,23 +260,28 @@ class StructuredPlanner:
                             old_ref_match = old_ref_pattern.search(value)
                             old_ref = old_ref_match.group(0) if old_ref_match else f"<{field_name}_FROM_STEP_{step_num}>"
 
+                            # CRITICAL FIX: Gemini uses 1-indexed step numbers, but we need 0-indexed
+                            # <GROUP_ID_FROM_STEP_1> means "from the first step" which is step_0
+                            step_num_int = int(step_num)
+                            zero_indexed_step = step_num_int - 1 if step_num_int > 0 else 0
+
                             # Convert to proper syntax based on field name (case-insensitive check)
                             field_upper = field_name.upper()
                             if "GROUP_ID" in field_upper or "CONNECTOR_ID" in field_upper or "DESTINATION_ID" in field_upper:
                                 # These come from Fivetran list APIs: data.items[0].id
-                                new_ref = f"{{{{step_{step_num}.data.items[0].id}}}}"
+                                new_ref = f"{{{{step_{zero_indexed_step}.data.items[0].id}}}}"
                             elif "DATASET" in field_upper:
                                 # Dataset IDs might be in different locations
-                                new_ref = f"{{{{step_{step_num}.dataset}}}}"
+                                new_ref = f"{{{{step_{zero_indexed_step}.dataset}}}}"
                             elif "SCHEMA" in field_upper:
                                 # Schema names
-                                new_ref = f"{{{{step_{step_num}.schema}}}}"
+                                new_ref = f"{{{{step_{zero_indexed_step}.schema}}}}"
                             else:
                                 # Generic: try data.items[0].id first
-                                new_ref = f"{{{{step_{step_num}.data.items[0].id}}}}"
+                                new_ref = f"{{{{step_{zero_indexed_step}.data.items[0].id}}}}"
 
                             fixed_value = old_ref_pattern.sub(new_ref, fixed_value)
-                            print(f"[Planner] Fixed reference in step {idx}, {key}: {old_ref} -> {new_ref}")
+                            print(f"[Planner] Fixed reference in step {idx}, {key}: {old_ref} -> {new_ref} (converted STEP_{step_num} to step_{zero_indexed_step})")
 
                         fixed_args[key] = fixed_value
                     else:
