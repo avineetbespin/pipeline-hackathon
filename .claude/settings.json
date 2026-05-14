@@ -44,7 +44,10 @@
       "Bash(git commit -m 'docs: Add next session handoff and memory files *)",
       "Bash(git commit -m 'docs: Add session end summary *)",
       "Bash(grep -E \"\\\\.md$\")",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(where gcloud *)",
+      "Bash(export CLOUDSDK_PYTHON=\"/c/Program Files \\(x86\\)/Google/Cloud SDK/google-cloud-sdk/platform/bundledpython/python.exe\")",
+      "Bash(export CLOUDSDK_CORE_DISABLE_PROMPTS=1)"
     ],
     "additionalDirectories": [
       "c:\\Users\\avine\\.claude\\projects\\c--Users-avine-pipeline-hackathon-pipeline-hackathon\\memory"

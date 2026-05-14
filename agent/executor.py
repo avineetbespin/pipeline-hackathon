@@ -10,7 +10,7 @@ from typing import Optional, Dict, Any
 
 from agent.models import Plan, Step, StepStatus, ApprovalRequest, PlanExecution
 from agent.state_memory import InMemoryStateManager
-from agent.tools import fivetran, bigquery, scheduler
+from agent.tools import fivetran, bigquery, scheduler, alerts
 
 
 class PlanExecutor:
@@ -23,7 +23,8 @@ class PlanExecutor:
         self.tool_registry = {
             **fivetran.TOOL_FUNCTIONS,
             **bigquery.TOOL_FUNCTIONS,
-            **scheduler.TOOL_FUNCTIONS
+            **scheduler.TOOL_FUNCTIONS,
+            **alerts.TOOL_FUNCTIONS
         }
         # Track results from completed steps for reference
         self.step_results: Dict[int, Any] = {}
