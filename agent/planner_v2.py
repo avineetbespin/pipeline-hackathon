@@ -187,6 +187,9 @@ class StructuredPlanner:
             print(f"[Planner] Response was: {response_text[:500]}")
             raise ValueError(f"Gemini did not return valid JSON: {e}")
 
+        # Post-process: Fix angle bracket references
+        plan_data = self._fix_angle_bracket_references(plan_data)
+
         # Build Plan object
         plan_id = str(uuid.uuid4())
         steps = []
@@ -216,6 +219,64 @@ class StructuredPlanner:
             print(f"  {idx+1}. {step.description}{approval_mark}")
 
         return plan
+
+    def _fix_angle_bracket_references(self, plan_data: dict) -> dict:
+        """
+        Post-process plan to fix angle bracket references like <GROUP_ID_FROM_STEP_1>
+        and convert them to proper {{step_N.path}} syntax.
+
+        Common patterns:
+        - <GROUP_ID_FROM_STEP_1> -> {{step_0.data.items[0].id}}
+        - <CONNECTOR_ID_FROM_STEP_2> -> {{step_1.data.items[0].id}}
+        - <DATASET_ID_FROM_STEP_3> -> {{step_2.dataset_id}}
+        """
+        import re
+
+        fixed_steps = []
+
+        for idx, step_data in enumerate(plan_data.get("steps", [])):
+            fixed_args = {}
+
+            for key, value in step_data.get("arguments", {}).items():
+                if isinstance(value, str) and "<" in value and ">" in value:
+                    # Find angle bracket patterns
+                    pattern = r'<([A-Z_]+)_FROM_STEP_(\d+)>'
+                    matches = re.findall(pattern, value)
+
+                    if matches:
+                        fixed_value = value
+                        for field_name, step_num in matches:
+                            old_ref = f"<{field_name}_FROM_STEP_{step_num}>"
+
+                            # Convert to proper syntax based on field name
+                            if "GROUP_ID" in field_name or "CONNECTOR_ID" in field_name or "DESTINATION_ID" in field_name:
+                                # These come from Fivetran list APIs: data.items[0].id
+                                new_ref = f"{{{{step_{step_num}.data.items[0].id}}}}"
+                            elif "DATASET" in field_name:
+                                # Dataset IDs might be in different locations
+                                new_ref = f"{{{{step_{step_num}.dataset}}}}"
+                            elif "SCHEMA" in field_name:
+                                # Schema names
+                                new_ref = f"{{{{step_{step_num}.schema}}}}"
+                            else:
+                                # Generic: try data.items[0].id first
+                                new_ref = f"{{{{step_{step_num}.data.items[0].id}}}}"
+
+                            fixed_value = fixed_value.replace(old_ref, new_ref)
+                            print(f"[Planner] Fixed reference in step {idx}, {key}: {old_ref} -> {new_ref}")
+
+                        fixed_args[key] = fixed_value
+                    else:
+                        fixed_args[key] = value
+                else:
+                    fixed_args[key] = value
+
+            # Update the step with fixed arguments
+            step_data["arguments"] = fixed_args
+            fixed_steps.append(step_data)
+
+        plan_data["steps"] = fixed_steps
+        return plan_data
 
 
 def main():
