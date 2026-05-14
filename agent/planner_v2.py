@@ -22,6 +22,9 @@ PLANNING_PROMPT = """You are PipelinePilot, an AI agent that creates data pipeli
 
 Given a user goal, you create a structured plan with specific steps.
 
+CRITICAL: When referencing previous step results, you MUST use the exact syntax: {{step_N.path}}
+DO NOT use angle brackets like <SOMETHING_FROM_STEP_N>. Always use double curly braces.
+
 Available tools:
 **Fivetran (READ):**
 - list_groups() - List all Fivetran groups/workspaces. Returns: {"data": {"items": [{"id": "...", "name": "..."}]}}
@@ -62,7 +65,7 @@ You MUST reference results from previous steps using {{step_N.path}} syntax with
 
 IMPORTANT: Always use {{step_N.path}} with DOUBLE curly braces. Never use angle brackets like <GROUP_ID_FROM_STEP_1>.
 
-Example multi-step plan:
+Example 1 - Multi-step plan with result references:
 {
   "steps": [
     {
@@ -80,9 +83,50 @@ Example multi-step plan:
         "group_id": "{{step_0.data.items[0].id}}"
       },
       "requires_approval": false
+    },
+    {
+      "description": "Get details of the first connector",
+      "tool_name": "get_connector",
+      "tool_type": "fivetran_read",
+      "arguments": {
+        "connector_id": "{{step_1.data.items[0].id}}"
+      },
+      "requires_approval": false
     }
   ],
   "estimated_duration_minutes": 2
+}
+
+Example 2 - Stripe revenue query:
+{
+  "steps": [
+    {
+      "description": "List Fivetran groups",
+      "tool_name": "list_groups",
+      "tool_type": "fivetran_read",
+      "arguments": {},
+      "requires_approval": false
+    },
+    {
+      "description": "List connectors to find Stripe",
+      "tool_name": "list_connectors",
+      "tool_type": "fivetran_read",
+      "arguments": {
+        "group_id": "{{step_0.data.items[0].id}}"
+      },
+      "requires_approval": false
+    },
+    {
+      "description": "Query Stripe revenue",
+      "tool_name": "run_query",
+      "tool_type": "bigquery_read",
+      "arguments": {
+        "sql": "SELECT SUM(amount)/100.0 as revenue FROM pipelinepilot.revenue_summary WHERE created_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)"
+      },
+      "requires_approval": false
+    }
+  ],
+  "estimated_duration_minutes": 3
 }
 
 Important rules:

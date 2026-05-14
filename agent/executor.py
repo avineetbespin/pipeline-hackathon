@@ -134,11 +134,15 @@ class PlanExecutor:
         if not arguments:
             return arguments
 
+        print(f"[Executor] Resolving references for step {current_step_idx}, arguments: {arguments}")
+
         resolved = {}
 
         for key, value in arguments.items():
             if isinstance(value, str):
                 resolved_value = value
+
+                print(f"[Executor] Processing argument {key}={value}")
 
                 # Handle {{step_N.path}} syntax (preferred)
                 if "{{" in value and "}}" in value:
